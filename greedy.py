@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from util import Matrix, Route, Solution, route_cost
+from utils import Matrix, Route, Solution, route_cost
 
 
 def solve_greedy(distances: Matrix,

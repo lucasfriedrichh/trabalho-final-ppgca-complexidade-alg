@@ -12,10 +12,13 @@ import math
 import time
 from typing import Callable
 
-from util import Matrix, Route, Solution
+from utils import Matrix, Route, Solution
 
 # Checking the clock on every permutation would dominate the loop cost.
 DEADLINE_CHECK_EVERY = 4096
+DEFAULT_TIMEOUT_SECONDS = 600
+# From this size on, (n-1)!/2 routes cannot finish in time, so the search is not run.
+SKIP_FROM_CITIES = 16
 
 
 def solve_brute_force(distances: Matrix, time_limit: float | None = None,

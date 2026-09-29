@@ -1,16 +1,17 @@
 # Problema do Caixeiro Viajante (TSP)
 
-Comparação de três abordagens para encontrar um circuito que visita todas as cidades e volta à origem: **algoritmo genético**, **guloso de arestas** e **força bruta**. As instâncias vêm da base [Traveling Salesman Problem (TSPLIB) Dataset](https://www.kaggle.com/datasets/ziya07/traveling-salesman-problem-tsplib-dataset), do Kaggle. Em cada tamanho, as três abordagens resolvem **a mesma instância**.
+Comparação de três abordagens para encontrar um circuito que visita todas as cidades e volta à origem: **algoritmo genético**, **guloso de arestas** e **força bruta**. As instâncias vêm da base [Traveling Salesman Problem (TSPLIB) Dataset](https://www.kaggle.com/datasets/ziya07/traveling-salesman-problem-tsplib-dataset), do Kaggle, e do [TSPLIB](https://github.com/mastqe/tsplib) clássico, que tem ótimos publicados.
 
-## Base de dados
+## Estrutura
 
-É usado o arquivo `tsp_dataset.csv`, com 2.783 instâncias euclidianas de **20 a 100 cidades** e coordenadas entre 0 e 100. De cada linha são lidos `instance_id`, `num_cities`, `city_coordinates` e `distance_matrix`. Antes do uso, a matriz é validada: precisa ser quadrada, simétrica, não negativa e ter diagonal zero.
-
-As colunas `best_route` e `total_distance` **não são usadas**. `best_route` contém apenas rótulos (`Route_0` a `Route_4`), não uma rota. `total_distance` não corresponde a nenhuma rota reconstruível das cidades. Por isso, a base não traz um ótimo de referência. O outro arquivo do pacote, `tsp_instances_dataset.csv`, também não é usado, porque seus nomes não batem com os tamanhos (a linha `a280`, por exemplo, tem 54 cidades).
-
-Na primeira execução, `util.ensure_dataset()` baixa a base (~90 MB compactada) para `data/tsp_dataset.csv`, pasta ignorada pelo git. Sem acesso à internet, baixe o arquivo manualmente pelo link acima e salve-o nesse caminho.
-
-**Casos do benchmark.** Para cada tamanho de 20 a 100, de 10 em 10, é usada a instância de menor `instance_id`. Como a base começa em 20 cidades, os casos de **8, 9 e 10 cidades** são sub-instâncias com as primeiras cidades da instância de 20 (`#20`). Nelas a força bruta obtém o ótimo exato, que serve de referência para as outras abordagens.
+| Arquivo | Responsabilidade |
+| :--- | :--- |
+| [`benchmarks.py`](benchmarks.py) | Ponto de entrada: roda todas as abordagens e gera GIFs, tabelas e gráficos |
+| [`docs.py`](docs.py) | Gera gráficos, GIFs, tabelas e o resumo, salvos na pasta `docs/` |
+| [`genetic.py`](genetic.py) | Toda a lógica do algoritmo genético |
+| [`bruteforce.py`](bruteforce.py) | Toda a lógica da força bruta |
+| [`greedy.py`](greedy.py) | Toda a lógica do guloso |
+| [`utils.py`](utils.py) | Funções compartilhadas: download das bases (Kaggle e TSPLIB), leitura e validação das instâncias, custo e validação de rotas, cronômetro |
 
 ## Instalação
 
@@ -24,54 +25,72 @@ python -m pip install -r requirements.txt
 
 Em Linux/macOS, ative com `source .venv/bin/activate`.
 
+## Como executar
+
+```powershell
+python benchmarks.py
+```
+
+Esse comando roda todas as abordagens em todas as etapas e gera GIFs, tabelas e gráficos em `docs/`. A execução completa leva cerca de 30 minutos. Para rodar só uma parte:
+
+```powershell
+python benchmarks.py --only benchmark gifs   # benchmark principal e GIFs (~2 min)
+python benchmarks.py --only E1 E8            # experimentos específicos
+python benchmarks.py --docs-only             # refaz tabelas e gráficos a partir dos CSVs salvos
+python benchmarks.py --help                  # todas as opções
+```
+
+| Etapa | O que faz | Tempo aprox. |
+| :--- | :--- | ---: |
+| `benchmark` | AG, guloso e força bruta em 8, 9, 10 e 20, 30, …, 100 cidades (uma instância por tamanho) | 1,2 min |
+| `gifs` | Animações de cada abordagem com 10, 20, 50 e 100 cidades | 0,8 min |
+| `E1` | Crescimento da força bruta de 4 a 12 cidades e projeção de O(n!) | 1 min |
+| `E2` | Distância até o ótimo exato em 20 instâncias de 10 cidades | 1,4 min |
+| `E3` | Os 81 tamanhos da base (20 a 100 cidades) | 8 min |
+| `E4` | Variação entre instâncias: 5 por tamanho (20, 30, …, 100) | 4 min |
+| `E5` | Guloso nas 2.783 instâncias da base | 0,2 min |
+| `E6` | AG com 10 sementes e curva de convergência (20, 50 e 100 cidades) | 3 min |
+| `E7` | 44 instâncias de 101 a 149 cidades (segundo CSV do Kaggle) | 6 min |
+| `E8` | 24 instâncias do TSPLIB (48 a 442 cidades) com ótimo publicado | 4 min |
+
+Cada etapa grava seus dados brutos em `docs/data/<etapa>.csv`. Ao final, o `docs.py` gera a partir desses CSVs:
+
+- `docs/tables/*.md`: tabelas;
+- `docs/graphs/*.png`: gráficos (`comparison.png` e um por experimento);
+- `docs/gifs/*.gif`: animações;
+- [`docs/README.md`](docs/README.md): resumo com gráficos e números principais, pronto para a apresentação.
+
+## Bases de dados
+
+Os downloads são feitos pelo `utils.py` na primeira execução e ficam em `data/`, pasta ignorada pelo git.
+
+**Kaggle, `tsp_dataset.csv`.** São 2.783 instâncias euclidianas de **20 a 100 cidades**, com coordenadas entre 0 e 100. São usados `instance_id`, `num_cities`, `city_coordinates` e `distance_matrix`. A matriz é validada antes do uso: precisa ser quadrada, simétrica, não negativa e ter diagonal zero. As colunas `best_route` (que só tem rótulos como `Route_0`) e `total_distance` (que não corresponde a nenhuma rota reconstruível) **não são usadas**, porque a base não traz um ótimo de referência.
+
+**Kaggle, `tsp_instances_dataset.csv`.** São 113 instâncias de 20 a 149 cidades, das quais são usadas as 44 com mais de 100. Os nomes da coluna `TSP_Instance` não correspondem às instâncias reais do TSPLIB (`berlin52`, por exemplo, tem 140 cidades). Por isso cada instância é identificada pela linha do arquivo (`K2-<linha>`), e as distâncias euclidianas são calculadas a partir das coordenadas.
+
+**TSPLIB.** São 24 instâncias clássicas com ótimo publicado, baixadas do espelho [mastqe/tsplib](https://github.com/mastqe/tsplib), porque o servidor original de Heidelberg não responde. As distâncias seguem a definição oficial (EUC_2D arredondada e ATT), a mesma dos ótimos publicados. Essa implementação foi conferida com os comprimentos de rota canônica da documentação do TSPLIB: `pcb442` = 221440 e `att532` = 309636.
+
+**Sub-instâncias.** A base do Kaggle começa em 20 cidades, e a força bruta não termina nesse tamanho. Por isso os casos com menos de 20 cidades usam as primeiras cidades de uma instância (`#20 (primeiras 10)`, por exemplo). Nesses casos a força bruta dá o ótimo exato, que serve de referência para as outras abordagens.
+
+Sem acesso à internet, baixe os arquivos manualmente e salve-os em `data/` (CSV do Kaggle) e em `data/tsplib/` (`<nome>.tsp`).
+
 ## Algoritmos
 
 | Arquivo | Abordagem | Complexidade |
 | :--- | :--- | :--- |
-| [`brute_force.py`](brute_force.py) | Enumera todos os circuitos com a cidade 0 fixa, avaliando cada ciclo em um único sentido | `(n-1)!/2` rotas, O(n!) |
-| [`greedy_tsp.py`](greedy_tsp.py) | Guloso de arestas: adiciona a menor aresta que não cria cidade de grau 3 nem ciclo prematuro (*union-find*) e, no fim, liga as duas pontas | O(n² log n) |
-| [`genetic.py`](genetic.py) | População aleatória, seleção por torneio, elitismo, cruzamento OX (*order crossover*) e mutação por inversão de trecho | O(G · P · n) |
+| `bruteforce.py` | Enumera todos os circuitos com a cidade 0 fixa, avaliando cada ciclo em um único sentido | `(n-1)!/2` rotas, O(n!) |
+| `greedy.py` | Guloso de arestas: adiciona a menor aresta que não cria cidade de grau 3 nem ciclo prematuro (*union-find*) e, no fim, liga as duas pontas | O(n² log n) |
+| `genetic.py` | População aleatória, seleção por torneio, elitismo, cruzamento OX (*order crossover*) e mutação por inversão de trecho | O(G · P · n) |
 
-[`util.py`](util.py) reúne as funções compartilhadas: download e leitura da base, a classe `Instance` (com sub-instâncias via `prefix`), `route_cost`, `is_valid_route` e o cronômetro `timed`. Cada abordagem expõe uma função `solve_*`, que recebe a matriz de distâncias e devolve uma `Solution` (rota, distância e status).
+Cada abordagem expõe uma função `solve_*`, que recebe a matriz de distâncias e devolve uma `Solution` (rota, distância e status). O `benchmarks.py` confere se toda rota devolvida é válida.
 
-Parâmetros padrão do genético: população 200, 1.500 gerações, cruzamento 0,9, mutação 0,6, torneio de 5 e elite de 4. A população inicial é **totalmente aleatória**, sem semente gulosa. Assim, a vantagem sobre o guloso vem da evolução, não de uma rota inicial pronta.
+**Genético.** Parâmetros padrão: população 200, 1.500 gerações, cruzamento 0,9, mutação 0,6, torneio de 5 e elite de 4. A população inicial é **totalmente aleatória**, sem semente gulosa. Assim, a vantagem sobre o guloso vem da evolução, não de uma rota inicial pronta.
 
-## Comparação
+**Força bruta.** É executada **até 15 cidades**, com prazo de `600` s, ajustável com `--brute-timeout`. **A partir de 16 cidades ela não é executada** e recebe status `timeout`, porque `15!/2` já passa de 650 bilhões de rotas. No E1, o prazo é de 1 hora, para medir o tempo exato de até 12 cidades.
 
-```powershell
-python benchmark.py
-```
+## Observações para a análise
 
-O [`benchmark.py`](benchmark.py) chama `run_genetic`, `run_greedy` e `run_brute_force` para cada caso e confere se todas as rotas são válidas. Ele salva [o gráfico](docs/graphs/comparison.png), [a tabela](docs/tables/benchmark.md) e [os valores em CSV](docs/tables/results.csv), atualizando os arquivos ao fim de cada caso. A distância inclui o retorno à cidade inicial. A coluna `vs guloso` mostra a diferença percentual em relação ao guloso (valores negativos indicam rota menor). Com os tamanhos padrão, a execução leva cerca de **75 segundos**, quase todos gastos pelo genético.
-
-**Força bruta.** A força bruta é executada **até 15 cidades**, com prazo de `600` s, ajustável com `--brute-timeout SEGUNDOS`. Com 8, 9 e 10 cidades ela termina em menos de 1 s, com status `ok`. **A partir de 16 cidades ela não é executada**: a linha recebe status `timeout`, sem distância nem tempo, porque `15!/2` já passa de 650 bilhões de rotas.
-
-Para repetir ou variar a configuração:
-
-```powershell
-python benchmark.py --sizes 8 9 10 20 30 40 50 60 70 80 90 100 --generations 1500 --population 200 --seed 42
-```
-
-Tamanhos menores que 20 viram sub-instâncias da instância de 20 cidades; os demais precisam existir na base (qualquer valor de 20 a 100). Cada caso roda uma única vez, então a comparação não é uma estimativa estatística. As instâncias de tamanhos diferentes são independentes; por isso, compare as abordagens **dentro de cada tamanho**.
-
-## GIFs
-
-```powershell
-python generate_gifs.py
-```
-
-Por padrão, são gerados GIFs para 10, 20, 50 e 100 cidades em [`docs/gifs`](docs/gifs/):
-
-- **Guloso:** arestas adicionadas da menor para a maior.
-- **Genético:** melhor rota e curva da melhor distância por geração.
-- **Força bruta:** cada melhoria encontrada durante a enumeração. Só é gerado até 10 cidades.
-
-Use `python generate_gifs.py --help` para escolher tamanhos ou ajustar a execução.
-
-## Testes
-
-```powershell
-python -m unittest discover tests
-```
-
-Os testes verificam a leitura e a validação da base, com um CSV sintético. Também comparam a força bruta com um oráculo que avalia todas as permutações e conferem que o guloso acha o ótimo num polígono convexo. Para o genético, confirmam que os operadores preservam permutações e que a execução é determinística para uma mesma semente.
+- Cada algoritmo roda uma vez por instância, exceto no E6, que usa 10 sementes. Os percentuais indicam tendência, não intervalos de confiança.
+- As instâncias de tamanhos diferentes são independentes. Compare as abordagens **dentro de cada instância**.
+- No TSPLIB (E8), o AG com 1.500 gerações fica de 1% a 14% acima do ótimo até 198 cidades, mas piora muito a partir de 200 (de 20% a 208%). O guloso fica estável, de 9% a 36% acima do ótimo.
+- A linha "BHH" nos gráficos é o limite do ótimo quando n tende ao infinito. É uma referência de tendência, não o ótimo destas instâncias.

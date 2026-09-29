@@ -29,5 +29,5 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Kaggle dataset (downloaded on demand by util.ensure_dataset)
-data/
+# Kaggle dataset (Kaggle and TSPLIB, downloaded on demand by utils.py)
+/data/

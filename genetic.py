@@ -14,7 +14,7 @@ import random
 from dataclasses import dataclass
 from typing import Callable
 
-from util import Matrix, Route, Solution, route_cost
+from utils import Matrix, Route, Solution, route_cost
 
 
 @dataclass(frozen=True)
